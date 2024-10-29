@@ -26,17 +26,21 @@ class Agent(ABC):
         self.rewards = []
 
 
+    def act(self, s):
+        possible_actions = [a for a in self.actions if s[a[0]*3 + a[1]] == '-']
 
+        if len(possible_actions) == 0:
+                return -1 , -1
         
 
-    def act(self, s: str):
-        possible_actions = [a for a in self.actions if s[a[0]*3 + a[1]] == '-']
         if random.random() < self.eps:
 
             action = possible_actions[random.randint(0,len(possible_actions)-1)]
         else:
 
             values = np.array([self.Q[a][s] for a in possible_actions])
+
+            
 
             ix_max = np.where(values == np.max(values))[0]
             if len(ix_max) > 1:
