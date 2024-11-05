@@ -1,5 +1,6 @@
 import pygame, sys
 from agent import *
+
  
 pygame.init()
  
@@ -34,12 +35,9 @@ def getStateKey(board):
         return key
 
 class Game:
-    def __init__(self, teacher=None):
-
-        print("inti")
-        self.board = [['-','-','-'], ['-','-','-'], ['-','-','-']]
+    def __init__(self):
+        self.board = np.array([['-','-','-'], ['-','-','-'], ['-','-','-']])
         self.agent = Learner(alpha=0.5, gamma=0.9, eps=0.1)
-        self.teacher = teacher
         self.game_finished = False
 
 
@@ -55,26 +53,11 @@ class Game:
                     graphical_board[i][j][0] = oimg
                     graphical_board[i][j][1] = oimg.get_rect(center=(j*300+150, i*300+150))
 
-    def add_XO(self, row, column, xo):
+
+    def add_XO(self, action, xo):
         global graphical_board
-        # if to_move == 'O':
 
-        #     prev_board = getStateKey(self.board)
-        #     print(prev_board)
-            
-        #     y, x = self.agent.act(prev_board)
-        #     print(y ,x)
-        #     self.board[y][x]
-        #     to_move = 'X'
-
-        # else :
-        
-        #     if self.board[round(converted_y)][round(converted_x)] != 'O' and self.board[round(converted_y)][round(converted_x)] != 'X':
-        #         self.board[round(converted_y)][round(converted_x)] = to_move
-            
-        #     to_move = 'O'
-
-        self.board[row][column] = xo
+        self.board[action[0]][action[1]] = xo
 
 
         self.render_board(X_IMG, O_IMG)
@@ -136,6 +119,7 @@ class Game:
         
 
     def play(self):
+        self.agent.learn()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -143,40 +127,45 @@ class Game:
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     current_pos = pygame.mouse.get_pos()
-                    print(current_pos[0], current_pos[1])
+
                     x = round((current_pos[0]-65)/835*2)
                     y = round(current_pos[1]/835*2)
 
                     if self.board[y][x] == '-':
-                        self.add_XO( y, x, 'X')
+                        self.add_XO( (y, x), 'X')
 
                         state = getStateKey(self.board)
-                        y, x = self.agent.act(state)
+                        action = self.agent.act(state)
 
-                        if y == -1:
+                        
+                        if action[0] == -1:
                             self.check_win()
                         else:
-                            self.add_XO( y, x, 'O')
+                            self.add_XO( action, 'O')
 
 
-                if self.game_finished:
+                winner = self.check_win()
+                if winner is not None:
+                    if winner == 'O':  # Agent wins
+                        reward = 1
+                    elif winner == 'DRAW':  # Game ends in a draw
+                        reward = 0
+                    else:  # Agent loses
+                        reward = -1
+                    self.agent.update(getStateKey(self.board), getStateKey(self.board), action,  reward)
+                    
                     global graphical_board
                     self.board = [['-','-','-'], ['-','-','-'], ['-','-','-']]
                     graphical_board = [[[None, None], [None, None], [None, None]], 
                                         [[None, None], [None, None], [None, None]], 
                                         [[None, None], [None, None], [None, None]]]
 
-                    self.to_move = 'X'
 
                     SCREEN.fill(BG_COLOR)
                     SCREEN.blit(BOARD, (64, 64))
 
                     self.game_finished = False
-
-                    pygame.display.update()
-                
-                if self.check_win() is not None:
-                    self.game_finished = True
+            
                 
                 pygame.display.update()
 
