@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import pygame ,sys
 
 BOARD_ROWS = 3
 BOARD_COLS = 3
@@ -126,7 +127,7 @@ class State:
        
 
 class Learner:
-    def __init__(self, name, exp_rate=0.3):
+    def __init__(self, name, exp_rate=0.0):
         self.name = name
         self.states = []
         self.lr = 0.2
@@ -138,9 +139,10 @@ class Learner:
         boardHash = str(board.reshape(3*3))
         return boardHash
     
-    def act(self, positions, current_board, symbol=-1):
+    def act(self, positions, current_board, symbol):
         if np.random.uniform(0, 1) <= self.exp_rate:
             idx = np.random.choice(len(positions))
+            print('random')
             action = positions[idx]
         else:
             value_max = -999
@@ -153,6 +155,7 @@ class Learner:
                 if value >= value_max:
                     value_max = value
                     action = p
+                    print(value, action)
         return action
     
     def addState(self, state):
@@ -178,3 +181,18 @@ class Learner:
         self.states_value = pickle.load(fr)
         fr.close()
     
+class Human: 
+    def act(positions, board, symbol):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    current_pos = pygame.mouse.get_pos()
+
+                    x = round((current_pos[0]-65)/835*2)
+                    y = round(current_pos[1]/835*2)
+
+                    if board[y][x] == 0:
+                        return (y,x)

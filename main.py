@@ -27,9 +27,12 @@ pygame.display.update()
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, p1, p2):
         self.board = np.zeros((BOARD_ROWS, BOARD_COLS))
         self.game_finished = False
+        self.player = 1
+        self.p1 = p1
+        self.p2 = p2
 
     def availablePositions(self):
         positions = []
@@ -54,7 +57,7 @@ class Game:
     def add_XO(self, action, xo):
         global graphical_board
 
-        self.board[action[0]][action[1]] = 1 if xo == 'X' else -1
+        self.board[action[0]][action[1]] = xo
 
 
         self.render_board(X_IMG, O_IMG)
@@ -114,61 +117,40 @@ class Game:
                         return None
             return "DRAW"
         
-
     def play(self):
-        # p1 = Learner("p1")
-        # p2 = Learner("p2")
-
-        # st = State(p1, p2)
-        # print("training...")
-        # st.play(50001)
-
-        p1 = Learner("p1")
-        p1.loadPolicy("policy_p1")
-        # print(p2.states_value)
-        positions = self.availablePositions()
-        action = p1.act(positions, self.board, 1)
-        print(action)
-        self.add_XO( action, 'X')
         while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    current_pos = pygame.mouse.get_pos()
-
-                    x = round((current_pos[0]-65)/835*2)
-                    y = round(current_pos[1]/835*2)
-
-                    if self.board[y][x] == 0:
-                        self.add_XO((y, x), 'O')
-
-                        winner = self.check_win()
-                        if winner is not None:
-                            print(winner)
-                            pygame.display.update()
-                            pygame.time.wait(3000)
-                            pygame.quit()
-                            sys.exit()
-                            
-
-                        positions = self.availablePositions()
-
-                        if(len(positions) > 0):
-                            action = p1.act(positions, self.board, 1)
-                            self.add_XO( action, 'X')
-
-                        winner = self.check_win()
-                        if winner is not None:
-                            print(winner)
-                            pygame.display.update()
-                            pygame.time.wait(3000)  
-                            pygame.quit()
-                            sys.exit()
-
+            if self.player == 1:
+                action = self.p1.act(self.availablePositions() , self.board, self.player)
+            else:
+                action = self.p2.act(self.availablePositions() ,  self.board, self.player)
+            
+            self.add_XO(action, self.player)
+            self.player = 1 if self.player == -1 else -1
+            winner = self.check_win()
+            pygame.display.update()
+            if winner is not None:
+                pygame.time.wait(1000)
+                global graphical_board
+                graphical_board = [[[None, None], [None, None], [None, None]], 
+                    [[None, None], [None, None], [None, None]], 
+                    [[None, None], [None, None], [None, None]]]
+                self.board = np.zeros((BOARD_ROWS, BOARD_COLS))
+                self.player = 1
+                SCREEN.fill(BG_COLOR)
+                SCREEN.blit(BOARD, (64, 64))
                 pygame.display.update()
 
-game = Game()
-game.play()
 
+
+p1 = Learner("p1")
+p2 = Learner("p2")
+
+# st = State(p1, p2)
+# print("training...")
+# st.play(50001)    
+
+p1.loadPolicy("policy_p1")
+p2.loadPolicy("policy_p2")
+game = Game(Human, p2)
+game.play()
+    
